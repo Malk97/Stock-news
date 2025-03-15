@@ -21,17 +21,12 @@ s3_client = boto3.client('s3')
 #........
 def load_model_from_s3(bucket_name, model_path_in_s3):
     model_file = io.BytesIO()
-    tokenizer_file = io.BytesIO()
     
-    s3_client.download_fileobj(bucket_name, model_path_in_s3 + 'pytorch_model.bin', model_file)
-    
-    s3_client.download_fileobj(bucket_name, model_path_in_s3 + 'tokenizer.json', tokenizer_file)
-    
-    model_file.seek(0)
+    s3_client.download_fileobj(bucket_name, model_path_in_s3)
+        
     model = AutoModelForSequenceClassification.from_pretrained(model_file)
     
-    tokenizer_file.seek(0)
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_file)
+    tokenizer = AutoTokenizer.from_pretrained(model_file)
     
     return model, tokenizer
 
