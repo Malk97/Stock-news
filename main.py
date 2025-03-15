@@ -4,8 +4,6 @@ import pandas as pd
 import requests
 import praw
 import ast
-import boto3
-import io
 
 
 # Load environment variables
@@ -14,38 +12,31 @@ model_path = "Model"
 CLIENT_ID = "yu7KW2fhRmQBUW3LDL1X2A"
 CLIENT_SECRET = "VZa78pB0H3bVlwOWsnsgV3yzFBLkSw"
 REDIRECT_URI = "http://localhost:8000"
-import boto3
-import io
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
-
-BUCKET_NAME = "data-storage-bucket-123"
-MODEL_FOLDER = "Model/"  
-MODEL_FILE_NAME = "model.safetensors"
-TOKENIZER_FILE_NAME = "tokenizer.json"
-
-s3_client = boto3.client('s3')
-
-def load_model_from_s3(bucket_name, model_folder, model_file_name, tokenizer_file_name):
-    model_file = io.BytesIO()
-    tokenizer_file = io.BytesIO()
-
-    # Download model
-    s3_client.download_fileobj(bucket_name, model_folder + model_file_name, model_file)
-    model_file.seek(0)  # Reset buffer position
-
-    # Download tokenizer
-    s3_client.download_fileobj(bucket_name, model_folder + tokenizer_file_name, tokenizer_file)
-    tokenizer_file.seek(0)  # Reset buffer position
-
-    # Load model and tokenizer
-    model = AutoModelForSequenceClassification.from_pretrained(io.BytesIO(model_file.read()), local_files_only=True)
-    tokenizer = AutoTokenizer.from_pretrained(io.BytesIO(tokenizer_file.read()), local_files_only=True)
-
-    return model, tokenizer
-
-model, tokenizer = load_model_from_s3(BUCKET_NAME, MODEL_FOLDER, MODEL_FILE_NAME, TOKENIZER_FILE_NAME)
+from huggingface_hub import InferenceClient
 
 
+client = InferenceClient(
+    provider="hf-inference",
+    api_key="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",
+)
+
+
+def predict_class(text: str, model, tokenizer):
+    """
+    Preprocess the text, tokenize it, and predict the class using the model.
+    """
+    # Preprocess text (this will be handled by the preprocess_text function from text_processing.py)
+    text = preprocess_text(text)
+
+    # Tokenize the preprocessed text
+    inputs = tokenizer(text, return_tensors='pt')
+
+    # Get model outputs
+    outputs = model(**inputs)
+
+    # Make prediction based on the model output
+    predictions = outputs.logits.argmax(dim=-1)
+    return "Positive" if predictions.item() == 1 else "Negative"
 
 # Define source credibility dictionary
 SOURCE_CREDIBILITY_DICT = {
@@ -100,22 +91,7 @@ def get_financial_news_with_ranking(num_articles=20):
     df_sorted = financial_news_df.sort_values(by='Rank', ascending=False)
     return df_sorted[['title', 'description', 'url', 'source']]
 
-def predict_class(text: str, model, tokenizer):
-    """
-    Preprocess the text, tokenize it, and predict the class using the model.
-    """
-    # Preprocess text (this will be handled by the preprocess_text function from text_processing.py)
-    text = preprocess_text(text)
 
-    # Tokenize the preprocessed text
-    inputs = tokenizer(text, return_tensors='pt')
-
-    # Get model outputs
-    outputs = model(**inputs)
-
-    # Make prediction based on the model output
-    predictions = outputs.logits.argmax(dim=-1)
-    return "Positive" if predictions.item() == 1 else "Negative"
 
 def preprocess_text(text):
     """Dummy function for text preprocessing."""
