@@ -20,7 +20,6 @@ client = InferenceClient(
     api_key="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",
 )
 
-
 # Define source credibility dictionary
 SOURCE_CREDIBILITY_DICT = {
     'cnn': 5, 'bbc': 5, 'fox news': 4, 'al jazeera': 5, 'the new york times': 5,
@@ -55,8 +54,17 @@ def predict_class(text: str,client):
     """
     # Preprocess text (this will be handled by the preprocess_text function from text_processing.py)
     text = preprocess_text(text)
-    result = client.predict(model="ProsusAI/finbert", data=text)
-    return result
+    
+    results = client.text_classification(text, model="ProsusAI/finbert")
+
+    sentiments = {elem.label: elem.score for elem in results if elem.label in ["Positive", "Negative"]}
+
+    if sentiments:
+        predicted_sentiment = max(sentiments, key=sentiments.get)
+        return predicted_sentiment
+    else:
+        return 'Negative'
+
 
 def process_news_data(df):
     """Process news DataFrame by adding sentiment and source credibility."""
