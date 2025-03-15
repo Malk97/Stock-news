@@ -55,7 +55,7 @@ def predict_class(text: str,client):
     """
     # Preprocess text (this will be handled by the preprocess_text function from text_processing.py)
     text = preprocess_text(text)
-    result = client.text_classification(inputs=text ,model="ProsusAI/finbert")
+    result = client.text_classification(model="ProsusAI/finbert", data=text)
     return result
 
 def process_news_data(df):
