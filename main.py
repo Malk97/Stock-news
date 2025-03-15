@@ -14,23 +14,37 @@ model_path = "Model"
 CLIENT_ID = "yu7KW2fhRmQBUW3LDL1X2A"
 CLIENT_SECRET = "VZa78pB0H3bVlwOWsnsgV3yzFBLkSw"
 REDIRECT_URI = "http://localhost:8000"
-BUCKET_NAME = "data-storage-bucket-123" 
-MODEL_PATH_IN_S3 = "Model/"  
+import boto3
+import io
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+BUCKET_NAME = "data-storage-bucket-123"
+MODEL_FOLDER = "Model/"  
+MODEL_FILE_NAME = "model.safetensors"
+TOKENIZER_FILE_NAME = "tokenizer.json"
 
 s3_client = boto3.client('s3')
-#........
-def load_model_from_s3(bucket_name, model_path_in_s3):
+
+def load_model_from_s3(bucket_name, model_folder, model_file_name, tokenizer_file_name):
     model_file = io.BytesIO()
-    
-    s3_client.download_fileobj(bucket_name, model_path_in_s3)
-        
-    model = AutoModelForSequenceClassification.from_pretrained(model_file)
-    
-    tokenizer = AutoTokenizer.from_pretrained(model_file)
-    
+    tokenizer_file = io.BytesIO()
+
+    # Download model
+    s3_client.download_fileobj(bucket_name, model_folder + model_file_name, model_file)
+    model_file.seek(0)  # Reset buffer position
+
+    # Download tokenizer
+    s3_client.download_fileobj(bucket_name, model_folder + tokenizer_file_name, tokenizer_file)
+    tokenizer_file.seek(0)  # Reset buffer position
+
+    # Load model and tokenizer
+    model = AutoModelForSequenceClassification.from_pretrained(io.BytesIO(model_file.read()), local_files_only=True)
+    tokenizer = AutoTokenizer.from_pretrained(io.BytesIO(tokenizer_file.read()), local_files_only=True)
+
     return model, tokenizer
 
-model, tokenizer = load_model_from_s3(BUCKET_NAME, MODEL_PATH_IN_S3)
+model, tokenizer = load_model_from_s3(BUCKET_NAME, MODEL_FOLDER, MODEL_FILE_NAME, TOKENIZER_FILE_NAME)
+
 
 
 # Define source credibility dictionary
