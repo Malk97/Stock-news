@@ -16,7 +16,7 @@ CLIENT_SECRET = "VZa78pB0H3bVlwOWsnsgV3yzFBLkSw"
 REDIRECT_URI = "http://localhost:8000"
 BUCKET_NAME = "data-storage-bucket-123" 
 MODEL_PATH_IN_S3 = "Model/"  
-
+# ..........
 s3_client = boto3.client('s3')
 
 def load_model_from_s3(bucket_name, model_path_in_s3):
